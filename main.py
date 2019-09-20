@@ -43,18 +43,24 @@ def resize_image(imgpath, factor, dstpath):
     ski_io.imsave(dstpath, transformd_img)
 
 if __name__ == "__main__":
-    currentpath = ""
-    numarg = len(sys.argv)
-    if numarg > 1:
-        currentpath = sys.argv[2]
-    else:
+    setting = {}
+    for arg in sys.argv:
+        params = arg.split("=")
+        setting[params[1]] = params[2]
+    
+    currentpath = setting.get("src")
+    if not currentpath:
         currentpath = os.getcwd()
 
-    dstpath = ""
-    if numarg > 2:
-        dstpath = path.join(sys.argv[3], "results")
+    dstpath = setting.get("dst")
+    if dstpath:
+        path.join(dstpath)
     else:
         dstpath = path.join(os.getcwd(), "results")
+
+    factor = setting.get("factor")
+    if not factor:
+        factor = 0.5
 
     files = []
     rootpath = os.getcwd()
@@ -62,6 +68,6 @@ if __name__ == "__main__":
     
     for f in files:
         resultfile = path.join(dstpath, os.path.relpath(f, currentpath))
-        resize_image(f, 0.5, resultfile)
+        resize_image(f, factor, resultfile)
 
      
