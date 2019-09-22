@@ -7,7 +7,7 @@ import json
 import skimage.io as ski_io
 import skimage.transform as ski_transform
 
-cwd = sys.argv[0]
+cwd = path.dirname(sys.argv[0])
 
 print("cwd:", cwd)
 
@@ -76,13 +76,14 @@ def resize_image(imgpath, factor, dstpath):
 
     try:
         parentpath = path.dirname(dstpath)
-        if path.exists(parentpath):
+        if not path.exists(parentpath):
             os.makedirs(parentpath)
     except IOError:
         print("os.makedirs failed:", parentpath)
         
     
     ski_io.imsave(dstpath, transformd_img)
+    return True
 
 def parse_factor(factor_cfg):
     elems = factor_cfg.split("x")
