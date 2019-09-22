@@ -7,7 +7,9 @@ import json
 import skimage.io as ski_io
 import skimage.transform as ski_transform
 
-cwd = sys.path[0]
+cwd = sys.argv[0]
+
+print("cwd:", cwd)
 
 cfgfile = path.join(cwd, "config.json")
 
@@ -24,8 +26,7 @@ image_type = {
     ".tiff": True,
 }
 
-def list_all_files(rootpath, findpath, files):
-    resultpath = path.join(rootpath, "results")
+def list_all_files(resultpath, findpath, files):
     def list_all_files_ex(currentpath, files):
         for p in os.listdir(currentpath):
             fullpath = path.join(currentpath, p)
@@ -47,7 +48,12 @@ def list_all_files(rootpath, findpath, files):
     list_all_files_ex(findpath, files)
 
 def resize_image(imgpath, factor, dstpath):
-    img = ski_io.imread(imgpath)
+    try:
+        img = ski_io.imread(imgpath)
+    except SyntaxError:
+        print("read image failed with SyntaxError")
+        return False
+
     shape = img.shape
 
     def recalc_shape_size():
@@ -55,17 +61,25 @@ def resize_image(imgpath, factor, dstpath):
             return factor
 
         assert(isinstance(factor[0], float) and isinstance(factor[1], float))
-        return (shape[0]*factor[0], shape[1]*factor[1])
+        return (int(shape[0]*factor[0]), int(shape[1]*factor[1]))
 
 
     shapesize = recalc_shape_size()
-    transformd_img = ski_transform.resize(img, 
-                    (shapesize[0], shapesize[1]),
-                    anti_aliasing=True)
+    print("shapesize:", shapesize[0], shapesize[1], "image:", imgpath)
+
     try:
-        os.makedirs(os.path.dirname(dstpath))
+        transformd_img = ski_transform.resize(img, 
+                        (shapesize[0], shapesize[1]),
+                        anti_aliasing=True)
+    except SyntaxError:
+        print("resize image failed with SyntaxError")
+
+    try:
+        parentpath = path.dirname(dstpath)
+        if path.exists(parentpath):
+            os.makedirs(parentpath)
     except IOError:
-        print("os.makedirs failed")
+        print("os.makedirs failed:", parentpath)
         
     
     ski_io.imsave(dstpath, transformd_img)
@@ -88,13 +102,13 @@ def parse_factor(factor_cfg):
 
 if __name__ == "__main__":
     setting = {}
-    for idx in range(1, 4):
+    for idx in range(1, len(sys.argv)):
         arg = sys.argv[idx]
         params = arg.split("=")
         setting[params[0]] = params[1]
     
     def check_path(name, defpath):
-        pp = setting.get("src")
+        pp = setting.get(name)
         if pp:
             if not os.path.isabs(pp):
                 pp = path.realpath(path.join(cwd, pp))
@@ -114,10 +128,13 @@ if __name__ == "__main__":
     print("src:", currentpath, "dst:", dstpath, "factor:", factor[0], factor[1])
 
     files = []
-    list_all_files(path.dirname(dstpath), currentpath, files)
+    list_all_files(dstpath, currentpath, files)
     
     for f in files:
         resultfile = path.join(dstpath, os.path.relpath(f, currentpath))
-        resize_image(f, factor, resultfile)
-
+        try:
+            if not resize_image(f, factor, resultfile):
+                print("resize image failed:", f)
+        except:
+            print("resize image failed, unkonw error:", f)
       
