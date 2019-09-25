@@ -153,8 +153,15 @@ if __name__ == "__main__":
     factor = parse_factor(factorcfg)
 
     print("convert path:")
+    paths_valid = []
     for p in paths:
-        print(p)
+        if path.exists(p):
+            paths_valid.append(p)
+            print(p)
+        else:
+            print(p, "path is not vaild")
+
+    paths = paths_valid
 
     print("setting:")
     for k in cfg.keys():
