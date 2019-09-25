@@ -74,8 +74,10 @@ def resize_image(imgpath, factor, dstpath):
     except IOError:
         print("os.makedirs failed:", parentpath)
         
-    
-    ski_io.imsave(dstpath, transformd_img)
+    try:
+        ski_io.imsave(dstpath, transformd_img)
+    except:
+        print("save file failed", dstpath)
     return True
 
 def parse_factor(factor_cfg):
@@ -110,12 +112,16 @@ def parse_args():
 
 def fetch_convert_paths():
     cfgfile = path.join(cwd, "config.json")
-    with open(cfgfile) as ff:
+    if path.exists(cfgfile):
+        ff = open(cfgfile)
         cfg = json.load(ff)
         paths = cfg.get("paths")
         if paths:
             cfg["paths"] = None
         return (cfg, paths)
+    else:
+        print("config.json not found")
+        return (None, None)
 
 def merge_setting(lhs, rhs):
     lhs_cfg = lhs[0]
@@ -124,12 +130,14 @@ def merge_setting(lhs, rhs):
     rhs_paths = rhs[1]
 
     cfg = {}
-    for k in lhs_cfg.keys():
-        cfg[k] = lhs_cfg[k]
+    if lhs_cfg:
+        for k in lhs_cfg.keys():
+            cfg[k] = lhs_cfg[k]
     
-    if k in rhs_cfg.keys():
-        if cfg.get(k) == None:
-            cfg[k] = rhs_cfg[k]
+    if rhs_cfg:
+        if k in rhs_cfg.keys():
+            if cfg.get(k) == None:
+                cfg[k] = rhs_cfg[k]
 
     paths = []
     if lhs_paths:
