@@ -1,3 +1,4 @@
 {
-    "factor":"0.5"
+    "factor":"0.5",
+    "paths":["G:/tmp/test"]
 }
