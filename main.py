@@ -11,13 +11,6 @@ cwd = path.dirname(sys.argv[0])
 
 print("cwd:", cwd)
 
-cfgfile = path.join(cwd, "config.json")
-
-cfg = json.load(cfgfile) if os.path.exists(cfgfile) else None
-
-if not cfg:
-    print("config file not found:", cfgfile)
-
 image_type = {
     ".png": True,
     ".jpg": True,
@@ -42,7 +35,7 @@ def list_all_files(resultpath, findpath, files):
                 continue
 
             ext = path.splitext(fullpath)[1]
-            if image_type.get(ext):
+            if image_type.get(ext.lower()):
                 files.append(fullpath)
     
     list_all_files_ex(findpath, files)
@@ -65,7 +58,7 @@ def resize_image(imgpath, factor, dstpath):
 
 
     shapesize = recalc_shape_size()
-    print("shapesize:", shapesize[0], shapesize[1], "image:", imgpath)
+    print("shape size from:", shape[0], shape[1], ", to", shapesize[0], shapesize[1])
 
     try:
         transformd_img = ski_transform.resize(img, 
@@ -101,41 +94,86 @@ def parse_factor(factor_cfg):
     assert(numelem == 2)
     return (check_cvt_to_int(elems[0]), check_cvt_to_int(elems[1]))
 
-if __name__ == "__main__":
-    setting = {}
+def parse_args():
+    cfg = {}
+    paths = []
     for idx in range(1, len(sys.argv)):
         arg = sys.argv[idx]
-        params = arg.split("=")
-        setting[params[0]] = params[1]
+        paris = arg.split('=')
+        if len(paris) > 1:
+            cfg[paris[0]] = paris[1]
+        else:
+            paths.append(paris[0])
     
-    def check_path(name, defpath):
-        pp = setting.get(name)
-        if pp:
-            if not os.path.isabs(pp):
-                pp = path.realpath(path.join(cwd, pp))
-            return pp
-        
-        return defpath
+    return (cfg, paths)
 
-    currentpath = check_path("src", cwd)
-    dstpath = check_path("dst", path.join(cwd, "results"))
 
-    factorcfg = setting.get("factor")
+def fetch_convert_paths():
+    cfgfile = path.join(cwd, "config.json")
+    with open(cfgfile) as ff:
+        cfg = json.load(ff)
+        paths = cfg.get("paths")
+        if paths:
+            cfg["paths"] = None
+        return (cfg, paths)
+
+def merge_setting(lhs, rhs):
+    lhs_cfg = lhs[0]
+    rhs_cfg = rhs[0]
+    lhs_paths = lhs[1]
+    rhs_paths = rhs[1]
+
+    cfg = {}
+    for k in lhs_cfg.keys():
+        cfg[k] = lhs_cfg[k]
+    
+    if k in rhs_cfg.keys():
+        if cfg.get(k) == None:
+            cfg[k] = rhs_cfg[k]
+
+    paths = []
+    if lhs_paths:
+        paths.extend(lhs_paths)
+    if rhs_paths:
+        paths.extend(rhs_paths)
+
+    return (cfg, paths)
+    
+
+if __name__ == "__main__":
+    settings = merge_setting(parse_args(), fetch_convert_paths())
+
+    cfg = settings[0]
+    paths = settings[1]
+
+    factorcfg = cfg.get("factor")
     if not factorcfg:
         factorcfg = "0.5"
 
     factor = parse_factor(factorcfg)
 
-    print("src:", currentpath, "dst:", dstpath, "factor:", factor[0], factor[1])
+    print("convert path:")
+    for p in paths:
+        print(p)
 
-    files = []
-    list_all_files(dstpath, currentpath, files)
-    
-    for f in files:
-        resultfile = path.join(dstpath, os.path.relpath(f, currentpath))
-        try:
-            if not resize_image(f, factor, resultfile):
-                print("resize image failed:", f)
-        except:
-            print("resize image failed, unkonw error:", f)
-      
+    print("setting:")
+    for k in cfg.keys():
+        print(k, cfg[k])
+
+    for cvtpath in paths:
+        dstpath = path.join(cvtpath, "results")
+        if not path.exists(dstpath):
+            os.mkdir(dstpath)
+        
+        files = []
+        list_all_files(dstpath, cvtpath, files)
+        
+        for f in files:
+            resultfile = path.join(dstpath, path.relpath(f, cvtpath))
+            try:
+                if resize_image(f, factor, resultfile):
+                    print("resize image successed:", f)
+                else:
+                    print("resize image failed:", f)
+            except:
+                print("resize image failed, unkonw error:", f)

@@ -1,5 +1,3 @@
 {
-    "src" : ".",
-    "dst" : "./results",
-    "factor" : "0.5x0.5"
+    "factor":"0.5"
 }
