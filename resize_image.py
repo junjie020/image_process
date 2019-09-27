@@ -50,7 +50,7 @@ def resize_image(imgpath, factor, dstpath):
     shape = img.shape
 
     def recalc_shape_size():
-        if  isinstance(factor[0], int) and factor[0] > 1 and isinstance(factor[1], int) and factor[1] > 1:
+        if  isinstance(factor[0], int) and isinstance(factor[1], int):
             return factor
 
         assert(isinstance(factor[0], float) and isinstance(factor[1], float))
@@ -95,7 +95,7 @@ def parse_factor(factor_cfg):
     assert(numelem == 2)
     def tonumber(v):
         pos = v.find(".")
-        if pos:
+        if pos != -1:
             return tofloat(v)
         try:
             return int(v)
