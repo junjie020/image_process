@@ -83,18 +83,26 @@ def resize_image(imgpath, factor, dstpath):
 def parse_factor(factor_cfg):
     elems = factor_cfg.split("x")
     numelem = len(elems)
-    def check_cvt_to_int(v):
+    def tofloat(v):
         try:
             return float(v)
         except:
-            return None
+            return 0.0
 
     if numelem == 1:
-        ff = check_cvt_to_int(factor_cfg)
-        return (ff, ff)
+        return (tofloat(elems[0]), elems[0])
     
     assert(numelem == 2)
-    return (check_cvt_to_int(elems[0]), check_cvt_to_int(elems[1]))
+    def tonumber(v):
+        pos = v.find(".")
+        if pos:
+            return tofloat(v)
+        try:
+            return int(v)
+        except:
+            return 0
+
+    return (tonumber(elems[0]), tonumber(elems[1]))
 
 def parse_args():
     cfg = {}
@@ -159,6 +167,8 @@ if __name__ == "__main__":
         factorcfg = "0.5"
 
     factor = parse_factor(factorcfg)
+
+    print("factor:", factor)
 
     print("convert path:")
     paths_valid = []
